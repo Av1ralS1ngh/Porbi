@@ -1313,18 +1313,57 @@ const App = () => {
 
       const ensureModalInterval = setInterval(ensureModalOnTop, 50);
 
+      // Listen for accounts changed event before connecting
+      newProvider.on("accountsChanged", (accounts) => {
+        console.log("Accounts changed:", accounts);
+        if (accounts && accounts.length > 0) {
+          newProvider.accounts = accounts;
+          setProvider(newProvider);
+          setIsConnected(true);
+        }
+      });
+
       await newProvider.connect();
 
       clearInterval(ensureModalInterval);
       observer.disconnect();
       document.head.removeChild(style);
-      console.log(newProvider);
-      console.log("Connected accounts:", newProvider.accounts[0]);
+
+      // Wait for the provider to fully initialize
+      let attempts = 0;
+      const maxAttempts = 10;
+
+      while (
+        (!newProvider.accounts || newProvider.accounts.length === 0) &&
+        attempts < maxAttempts
+      ) {
+        await new Promise((resolve) => setTimeout(resolve, 200));
+        attempts++;
+        console.log(`Attempt ${attempts}: Checking for accounts...`);
+      }
+
+      console.log("Provider object:", newProvider);
+      console.log("Final accounts check:", newProvider.accounts);
       console.log("Connected chainId:", newProvider.chainId);
 
       if (newProvider.accounts && newProvider.accounts.length > 0) {
         setProvider(newProvider);
         setIsConnected(true);
+      } else {
+        // Force a request for accounts if still empty
+        try {
+          const accounts = await newProvider.request({
+            method: "eth_accounts",
+          });
+          console.log("Requested accounts:", accounts);
+          if (accounts && accounts.length > 0) {
+            newProvider.accounts = accounts;
+            setProvider(newProvider);
+            setIsConnected(true);
+          }
+        } catch (accountsError) {
+          console.error("Failed to request accounts:", accountsError);
+        }
       }
     } catch (err) {
       console.error("Wallet connection failed:", err);
@@ -1360,7 +1399,6 @@ const App = () => {
   ) {
     return <Dashboard provider={provider} onDisconnect={handleDisconnect} />;
   }
-
   return <PorbiLanding onWalletConnect={handleWalletConnect} />;
 };
 
