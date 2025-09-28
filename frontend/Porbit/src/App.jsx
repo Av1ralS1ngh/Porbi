@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
+import { SwapPanel } from './components/SwapPanel.jsx';
+import { LiquidityPanel } from './components/LiquidityPanel.jsx';
 import { EthereumProvider } from "@walletconnect/ethereum-provider";
 import {
   Card,
@@ -18,33 +20,203 @@ import {
   TrendingUp,
   BarChart3,
   Sparkles,
-  ArrowUpRight,
-  CircuitBoard,
-  Wallet,
-  Shield,
-  Activity,
-  Target,
-  Coins,
-  Infinity as InfinityIcon,
-  LogOut,
-  Copy,
-  ExternalLink,
-} from "lucide-react";
+  import { ProtocolStats } from './components/ProtocolStats.jsx';
+  import { RiskMetrics } from './components/RiskMetrics.jsx';
+  import { OraclePrices } from './components/OraclePrices.jsx';
+  import { MerchantStatus } from './components/MerchantStatus.jsx';
+  import {
+    ChevronDown,
+    ArrowRight,
+    Globe,
+    Layers,
+    Zap,
+    TrendingUp,
+    BarChart3,
+    Sparkles,
+    ArrowUpRight,
+    CircuitBoard,
+    Wallet,
+    Shield,
+    Activity,
+    Target,
+    Coins,
+    Infinity as InfinityIcon,
+    LogOut,
+    Copy,
+    ExternalLink,
+  } from "lucide-react";
 
-// Dashboard Component
-const Dashboard = ({ provider, onDisconnect }) => {
-  const [account, setAccount] = useState("");
-  const [chainId, setChainId] = useState("");
+  // Dashboard Component (merged version)
+  const Dashboard = ({ provider, onDisconnect, isConnected }) => {
+    const [account, setAccount] = useState("");
+    const [chainId, setChainId] = useState("");
+    const [balance, setBalance] = useState("0");
+    const [nativeSymbol, setNativeSymbol] = useState("ETH");
+    const [networkName, setNetworkName] = useState("");
+    const [copied, setCopied] = useState(false);
+
+    const chainMetadata = {
+      1: { name: "Ethereum Mainnet", symbol: "ETH", explorer: "https://etherscan.io" },
+      137: { name: "Polygon", symbol: "MATIC", explorer: "https://polygonscan.com" },
+      80001: { name: "Polygon Mumbai", symbol: "MATIC", explorer: "https://mumbai.polygonscan.com" },
+      80002: { name: "Polygon Amoy", symbol: "MATIC", explorer: "https://amoy.polygonscan.com" },
+      11155111: { name: "Sepolia", symbol: "ETH", explorer: "https://sepolia.etherscan.io" },
+    };
+
+    const formatBalance = (weiHex) => {
+      if (!weiHex) return "0";
+      try {
+        const wei = BigInt(weiHex);
+        const ether = Number(wei) / 1e18;
+        return ether.toFixed(4);
+      } catch {
+        return "0";
+      }
+    };
+
+    const refreshState = async (prov) => {
+      if (!prov) return;
+      try {
+        let accounts = prov.accounts;
+        if ((!accounts || accounts.length === 0) && prov.request) {
+          accounts = await prov.request({ method: "eth_accounts" });
+        }
+        if (accounts && accounts.length > 0) {
+          setAccount(accounts[0]);
+        }
+
+        let cid = prov.chainId;
+        if (!cid && prov.request) {
+          const chainHex = await prov.request({ method: "eth_chainId" });
+          cid = parseInt(chainHex, 16);
+        }
+        if (cid) setChainId(cid);
+
+        const meta = chainMetadata[cid] || { name: `Chain ${cid}`, symbol: "ETH", explorer: "" };
+        setNetworkName(meta.name);
+        setNativeSymbol(meta.symbol);
+
+        if (prov.request && accounts && accounts.length > 0) {
+          try {
+            const bal = await prov.request({
+              method: "eth_getBalance",
+              params: [accounts[0], "latest"],
+            });
+            setBalance(formatBalance(bal));
+          } catch (e) {
+            console.warn("Balance fetch failed", e);
+          }
+        }
+      } catch (e) {
+        console.warn("State refresh failed", e);
+      }
+    };
+
+    useEffect(() => {
+      refreshState(provider);
+    }, [provider]);
+
+    useEffect(() => {
+      if (!provider || !provider.on) return;
+      const handleAccounts = (accs) => {
+        setAccount(accs[0] || "");
+        refreshState(provider);
+      };
+      const handleChain = () => {
+        refreshState(provider);
+      };
+      provider.on("accountsChanged", handleAccounts);
+      provider.on("chainChanged", handleChain);
+      return () => {
+        try {
+          provider.removeListener && provider.removeListener("accountsChanged", handleAccounts);
+          provider.removeListener && provider.removeListener("chainChanged", handleChain);
+        } catch {}
+      };
   const [balance, setBalance] = useState("0");
-  const [copied, setCopied] = useState(false);
+  >>>>>>> main
+    const copyToClipboard = async (text) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error("Failed to copy:", err);
+      }
+    };
+
+    const formatAddress = (address) => {
+      if (!address) return "";
+      return `${address.slice(0, 6)}...${address.slice(-4)}`;
+    };
+
+    const handleDisconnect = async () => {
+      try {
+        if (provider && provider.disconnect) {
+          await provider.disconnect();
+        }
+      } catch (error) {
+        console.error("Disconnect error:", error);
+      } finally {
+        onDisconnect();
+      }
+    };
+      if ((!accounts || accounts.length === 0) && prov.request) {
+        accounts = await prov.request({ method: "eth_accounts" });
+      }
+      if (accounts && accounts.length > 0) {
+        setAccount(accounts[0]);
+      }
+
+      let cid = prov.chainId;
+      if (!cid && prov.request) {
+        const chainHex = await prov.request({ method: "eth_chainId" });
+        cid = parseInt(chainHex, 16);
+      }
+      if (cid) setChainId(cid);
+
+      const meta = chainMetadata[cid] || { name: `Chain ${cid}`, symbol: "ETH", explorer: "" };
+      setNetworkName(meta.name);
+      setNativeSymbol(meta.symbol);
+
+      if (prov.request && accounts && accounts.length > 0) {
+        try {
+          const bal = await prov.request({
+            method: "eth_getBalance",
+            params: [accounts[0], "latest"],
+          });
+          setBalance(formatBalance(bal));
+        } catch (e) {
+          console.warn("Balance fetch failed", e);
+        }
+      }
+    } catch (e) {
+      console.warn("State refresh failed", e);
+    }
+  };
 
   useEffect(() => {
-    if (provider && provider.accounts && provider.accounts.length > 0) {
-      setAccount(provider.accounts[0]);
-      setChainId(provider.chainId);
-      // Mock balance - in real app, you'd fetch actual balance
-      setBalance("1.234");
-    }
+    refreshState(provider);
+  }, [provider]);
+
+  useEffect(() => {
+    if (!provider || !provider.on) return;
+    const handleAccounts = (accs) => {
+      setAccount(accs[0] || "");
+      refreshState(provider);
+    };
+    const handleChain = () => {
+      refreshState(provider);
+    };
+    provider.on("accountsChanged", handleAccounts);
+    provider.on("chainChanged", handleChain);
+    return () => {
+      try {
+        provider.removeListener && provider.removeListener("accountsChanged", handleAccounts);
+        provider.removeListener && provider.removeListener("chainChanged", handleChain);
+      } catch {}
+    };
+>>>>>>> main
   }, [provider]);
 
   const copyToClipboard = async (text) => {
@@ -104,9 +276,7 @@ const Dashboard = ({ provider, onDisconnect }) => {
                 <h1 className="text-2xl font-extrabold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent tracking-tight">
                   Porbi Dashboard
                 </h1>
-                <div className="text-xs text-gray-400">
-                  Connected to Polygon Amoy
-                </div>
+                <div className="text-xs text-gray-400">{networkName ? `Connected to ${networkName}` : "Not connected"}</div>
               </div>
             </div>
 
@@ -183,8 +353,8 @@ const Dashboard = ({ provider, onDisconnect }) => {
             </CardHeader>
             <CardContent>
               <div className="text-gray-300">
-                <div className="text-lg font-semibold">Polygon Amoy</div>
-                <div className="text-sm text-gray-400">Chain ID: {chainId}</div>
+                <div className="text-lg font-semibold">{networkName || "Unknown Network"}</div>
+                <div className="text-sm text-gray-400">Chain ID: {chainId || "-"}</div>
               </div>
             </CardContent>
           </Card>
@@ -198,8 +368,8 @@ const Dashboard = ({ provider, onDisconnect }) => {
             </CardHeader>
             <CardContent>
               <div className="text-gray-300">
-                <div className="text-2xl font-bold">{balance} MATIC</div>
-                <div className="text-sm text-gray-400">≈ $0.80 USD</div>
+                <div className="text-2xl font-bold">{balance} {nativeSymbol}</div>
+                <div className="text-sm text-gray-400">&nbsp;</div>
               </div>
             </CardContent>
           </Card>
@@ -218,174 +388,37 @@ const Dashboard = ({ provider, onDisconnect }) => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                  <label className="text-gray-400 text-sm mb-2 block">
-                    From
-                  </label>
-                  <div className="flex items-center justify-between">
-                    <input
-                      type="number"
-                      placeholder="0.0"
-                      className="bg-transparent text-white text-2xl font-bold outline-none flex-1"
-                    />
-                    <Button className="bg-white/10 hover:bg-white/20 text-white border border-white/20">
-                      USDC
-                      <ChevronDown className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                  <div className="text-gray-400 text-sm mt-1">
-                    Balance: 0.00 USDC
-                  </div>
-                </div>
-
-                <div className="flex justify-center">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="rounded-full w-10 h-10 p-0"
-                  >
-                    <ArrowRight className="w-4 h-4 rotate-90" />
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                  <label className="text-gray-400 text-sm mb-2 block">To</label>
-                  <div className="flex items-center justify-between">
-                    <input
-                      type="number"
-                      placeholder="0.0"
-                      className="bg-transparent text-white text-2xl font-bold outline-none flex-1"
-                    />
-                    <Button className="bg-white/10 hover:bg-white/20 text-white border border-white/20">
-                      USDT
-                      <ChevronDown className="w-4 h-4 ml-2" />
-                    </Button>
-                  </div>
-                  <div className="text-gray-400 text-sm mt-1">
-                    Balance: 0.00 USDT
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 text-sm text-gray-300">
-                <div className="flex justify-between">
-                  <span>Price Impact</span>
-                  <span className="text-green-400">0.01%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Trading Fee</span>
-                  <span>0.04%</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Route</span>
-                  <span>Direct</span>
-                </div>
-              </div>
-
-              <Button className="w-full bg-gradient-to-r from-white to-gray-100 text-black hover:from-gray-100 hover:to-white py-3 text-lg font-semibold">
-                Connect Wallet to Swap
-              </Button>
+              <SwapPanel provider={provider} isConnected={isConnected} />
             </CardContent>
           </Card>
 
           {/* Liquidity Interface */}
           <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
             <CardHeader>
-              <CardTitle className="text-white text-2xl">
-                Add Liquidity
-              </CardTitle>
-              <CardDescription className="text-gray-300">
-                Provide liquidity to earn fees with concentrated positions
-              </CardDescription>
+              <CardTitle className="text-white text-2xl">Liquidity</CardTitle>
+              <CardDescription className="text-gray-300">Add or remove liquidity</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
-                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                  <label className="text-gray-400 text-sm mb-2 block">
-                    Select Pool
-                  </label>
-                  <Button className="w-full bg-white/10 hover:bg-white/20 text-white border border-white/20 justify-between">
-                    <span>USDC / USDT / DAI</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                <div className="p-4 bg-white/5 rounded-lg border border-white/10">
-                  <label className="text-gray-400 text-sm mb-2 block">
-                    Price Range
-                  </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs text-gray-500">Min Price</label>
-                      <input
-                        type="number"
-                        placeholder="0.995"
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white mt-1"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Max Price</label>
-                      <input
-                        type="number"
-                        placeholder="1.005"
-                        className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-2 text-sm text-gray-300 bg-white/5 rounded-lg p-4">
-                  <div className="flex justify-between">
-                    <span>Capital Efficiency</span>
-                    <span className="text-green-400">847x</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Est. APR</span>
-                    <span className="text-green-400">12.4%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Your Position</span>
-                    <span>0.5% of pool</span>
-                  </div>
-                </div>
-              </div>
-
-              <Button className="w-full bg-gradient-to-r from-white to-gray-100 text-black hover:from-gray-100 hover:to-white py-3 text-lg font-semibold">
-                Add Liquidity
-              </Button>
+              <LiquidityPanel provider={provider} isConnected={isConnected} />
             </CardContent>
           </Card>
         </div>
+        {/* Dynamic Protocol Stats */}
+        <ProtocolStats />
 
-        {/* Stats Section */}
+        {/* Risk Metrics */}
         <div className="mt-12">
-          <h3 className="text-2xl font-bold text-white mb-6">Protocol Stats</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {[
-              {
-                label: "Total Value Locked",
-                value: "$12.4M",
-                icon: TrendingUp,
-              },
-              { label: "24h Volume", value: "$2.1M", icon: BarChart3 },
-              { label: "Total Fees Earned", value: "$84.2K", icon: Coins },
-              { label: "Active LPs", value: "1,247", icon: Activity },
-            ].map((stat, index) => (
-              <Card
-                key={index}
-                className="bg-white/5 border-white/10 backdrop-blur-sm"
-              >
-                <CardContent className="p-6 text-center">
-                  <stat.icon className="w-8 h-8 mx-auto mb-3 text-white" />
-                  <div className="text-2xl font-bold mb-1 text-white">
-                    {stat.value}
-                  </div>
-                  <div className="text-gray-300 text-sm">{stat.label}</div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <RiskMetrics userAddress={account} />
+        </div>
+
+        {/* Oracle Prices */}
+        <div className="mt-12">
+          <OraclePrices />
+        </div>
+
+        {/* x402 Merchant Status */}
+        <div className="mt-12">
+          <MerchantStatus />
         </div>
       </div>
     </div>
@@ -1201,6 +1234,8 @@ const PorbiLanding = ({ onWalletConnect }) => {
 const App = () => {
   const [provider, setProvider] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   const projectId = "c1d7a266af7ec545c7118302d07f2d24";
   const chains = [80002]; // Polygon Amoy testnet
@@ -1264,60 +1299,161 @@ const App = () => {
                 nodeClasses.includes("wcm") ||
                 nodeClasses.includes("w3m") ||
                 nodeClasses.includes("walletconnect") ||
-                node.tagName === "WCM-MODAL" ||
-                node.tagName === "W3M-MODAL"
-              ) {
-                shouldCheck = true;
-              }
-            }
-          });
-        }
+                  // Attempt connection with injected MetaMask first, fallback to WalletConnect
+                  const connectMetaMask = async () => {
+                    setErrorMsg("");
+                    if (typeof window === "undefined") return false;
+                    if (!window.ethereum) {
+                      setErrorMsg("MetaMask not detected in this browser.");
+                      return false;
+                    }
+                    try {
+                      setConnecting(true);
+                      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+                      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+                      const injectedProvider = {
+                        isMetaMask: window.ethereum.isMetaMask,
+                        request: window.ethereum.request.bind(window.ethereum),
+                        accounts,
+                        chainId: parseInt(chainId, 16),
+                        disconnect: async () => {},
+                        on: window.ethereum.on.bind(window.ethereum),
+                      };
+                      window.ethereum.on("accountsChanged", (accs) => {
+                        if (accs.length === 0) {
+                          handleDisconnect();
+                        } else {
+                          injectedProvider.accounts = accs;
+                          setProvider({ ...injectedProvider });
+                          setIsConnected(true);
+                        }
+                      });
+                      window.ethereum.on("chainChanged", (newChainIdHex) => {
+                        try {
+                          const numericId = parseInt(newChainIdHex, 16);
+                          injectedProvider.chainId = numericId;
+                          setProvider({ ...injectedProvider, chainId: numericId });
+                        } catch {}
+                      });
+                      setProvider(injectedProvider);
+                      setIsConnected(true);
+                      return true;
+                    } catch (e) {
+                      console.error("MetaMask connection failed", e);
+                      setErrorMsg(e?.message || "Failed to connect MetaMask");
+                      return false;
+                    } finally {
+                      setConnecting(false);
+                    }
+                  };
+
+                  const connectViaWalletConnect = async () => {
+                    console.log("Connecting via WalletConnect...");
+                    try {
+                      setConnecting(true);
+                      setErrorMsg("");
+                      const observer = createModalObserver();
+                      const style = document.createElement("style");
+                      style.textContent = `
+                        wcm-modal, w3m-modal, [class*="wcm-modal"], [class*="w3m-modal"] { z-index: 2147483647 !important; position: fixed !important; }
+                      `;
+                      document.head.appendChild(style);
+                      const newProvider = await EthereumProvider.init({ projectId, chains, showQrModal: true });
+                      const ensureModalInterval = setInterval(ensureModalOnTop, 50);
+                      newProvider.on("accountsChanged", (accounts) => {
+                        if (accounts && accounts.length > 0) {
+                          newProvider.accounts = accounts;
+                          setProvider(newProvider);
+                          setIsConnected(true);
+                        }
+                      });
+                      await newProvider.connect();
+                      clearInterval(ensureModalInterval);
+                      observer.disconnect();
+                      document.head.removeChild(style);
+                      let attempts = 0;
+                      const maxAttempts = 10;
+                      while ((!newProvider.accounts || newProvider.accounts.length === 0) && attempts < maxAttempts) {
+                        await new Promise((r) => setTimeout(r, 200));
+                        attempts++;
+                      }
+                      if (newProvider.accounts && newProvider.accounts.length > 0) {
+                        setProvider(newProvider);
+                        setIsConnected(true);
+                      } else {
+                        try {
+                          const accounts = await newProvider.request({ method: "eth_accounts" });
+                          if (accounts && accounts.length > 0) {
+                            newProvider.accounts = accounts;
+                            setProvider(newProvider);
+                            setIsConnected(true);
+                          }
+                        } catch (accountsError) {
+                          console.error("Failed to request accounts:", accountsError);
+                        }
+                      }
+                    } catch (err) {
+                      console.error("WalletConnect failed:", err);
+                      setErrorMsg("WalletConnect failed: " + (err?.message || "Unknown error"));
+                    } finally {
+                      setConnecting(false);
+                    }
+                  };
+
+                  const handleWalletConnect = async () => {
+                    if (window?.ethereum && window.ethereum.isMetaMask) {
+                      const mmOk = await connectMetaMask();
+                      if (mmOk) return;
+                    }
+                    await connectViaWalletConnect();
+                  };
+        } catch {}
       });
 
-      if (shouldCheck) {
-        setTimeout(ensureModalOnTop, 50);
-        setTimeout(ensureModalOnTop, 200);
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ["class", "style"],
-    });
-
-    return observer;
+      setProvider(injectedProvider);
+      setIsConnected(true);
+      return true;
+    } catch (e) {
+      console.error("MetaMask connection failed", e);
+      setErrorMsg(e?.message || "Failed to connect MetaMask");
+      return false;
+    } finally {
+      setConnecting(false);
+    }
   };
 
-  const handleWalletConnect = async () => {
-    console.log("Connecting wallet...");
+  // Fallback connection using WalletConnect (QR modal) when no injected provider
+  // or when user explicitly chooses WalletConnect.
+  const connectViaWalletConnect = async () => {
+    console.log("Connecting via WalletConnect...");
     try {
+      setConnecting(true);
+      setErrorMsg("");
       const observer = createModalObserver();
-
-      // Add global styles for modal
       const style = document.createElement("style");
       style.textContent = `
-        wcm-modal, w3m-modal, [class*="wcm-modal"], [class*="w3m-modal"] {
-          z-index: 2147483647 !important;
-          position: fixed !important;
-        }
+        wcm-modal, w3m-modal, [class*="wcm-modal"], [class*="w3m-modal"] { z-index: 2147483647 !important; position: fixed !important; }
       `;
       document.head.appendChild(style);
 
-      const newProvider = await EthereumProvider.init({
-        projectId,
-        chains,
-        showQrModal: true,
-      });
-
+      const newProvider = await EthereumProvider.init({ projectId, chains, showQrModal: true });
       const ensureModalInterval = setInterval(ensureModalOnTop, 50);
 
+      newProvider.on("accountsChanged", (accounts) => {
+        if (accounts && accounts.length > 0) {
+          newProvider.accounts = accounts;
+          setProvider(newProvider);
+          setIsConnected(true);
+        }
+      });
+
+>>>>>>> main
       await newProvider.connect();
 
       clearInterval(ensureModalInterval);
       observer.disconnect();
       document.head.removeChild(style);
+<<<<<<< HEAD
       console.log(newProvider);
       console.log("Connected accounts:", newProvider.accounts[0]);
       console.log("Connected chainId:", newProvider.chainId);
@@ -1331,6 +1467,49 @@ const App = () => {
     }
   };
 
+=======
+
+      let attempts = 0;
+      const maxAttempts = 10;
+      while ((!newProvider.accounts || newProvider.accounts.length === 0) && attempts < maxAttempts) {
+        await new Promise((r) => setTimeout(r, 200));
+        attempts++;
+      }
+      if (newProvider.accounts && newProvider.accounts.length > 0) {
+        setProvider(newProvider);
+        setIsConnected(true);
+      } else {
+        try {
+          const accounts = await newProvider.request({ method: "eth_accounts" });
+          if (accounts && accounts.length > 0) {
+            newProvider.accounts = accounts;
+            setProvider(newProvider);
+            setIsConnected(true);
+          }
+        } catch (accountsError) {
+          console.error("Failed to request accounts:", accountsError);
+        }
+      }
+    } catch (err) {
+      console.error("WalletConnect failed:", err);
+      setErrorMsg("WalletConnect failed: " + (err?.message || "Unknown error"));
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const handleWalletConnect = async () => {
+    // Unified connect entry: try MetaMask first if it's present in browser.
+    // If not available or fails, fallback to WalletConnect QR modal.
+    if (window?.ethereum && window.ethereum.isMetaMask) {
+      const mmOk = await connectMetaMask();
+      if (mmOk) return; // success
+    }
+    // 2. Fallback to WalletConnect QR
+    await connectViaWalletConnect();
+  };
+
+>>>>>>> main
   const handleDisconnect = () => {
     setProvider(null);
     setIsConnected(false);
@@ -1352,16 +1531,32 @@ const App = () => {
     checkConnection();
   }, [provider]);
 
-  if (
-    isConnected &&
-    provider &&
-    provider.accounts &&
-    provider.accounts.length > 0
-  ) {
-    return <Dashboard provider={provider} onDisconnect={handleDisconnect} />;
+  if (isConnected && provider && provider.accounts && provider.accounts.length > 0) {
+    return <Dashboard provider={provider} onDisconnect={handleDisconnect} isConnected={isConnected} />;
   }
 
-  return <PorbiLanding onWalletConnect={handleWalletConnect} />;
+  // Augment landing with dual-connect buttons & status
+  return (
+    <>
+      <PorbiLanding onWalletConnect={handleWalletConnect} />
+      <div className="fixed bottom-4 right-4 space-y-2 z-[999] max-w-xs">
+        {errorMsg && (
+          <div className="bg-red-600/80 text-white text-sm px-3 py-2 rounded shadow">{errorMsg}</div>
+        )}
+        <div className="bg-black/70 backdrop-blur border border-white/10 rounded p-3 flex flex-col gap-2">
+          <div className="text-xs text-gray-300">Preferred Connection</div>
+          <div className="flex gap-2">
+            <Button disabled={connecting} onClick={connectMetaMask} className="flex-1">
+              {connecting ? "Connecting..." : "MetaMask"}
+            </Button>
+            <Button disabled={connecting} variant="outline" onClick={connectViaWalletConnect} className="flex-1">
+              {connecting ? "..." : "WalletConnect"}
+            </Button>
+          </div>
+        </div>
+    </div>
+    </>
+  );
 };
 
 export default App;
