@@ -6,7 +6,7 @@
 	</p>
 	<p>
 		<a href="https://www.paradigm.xyz/2025/06/orbital">Orbital Design</a> ·
-		<a href="https://docs.cdp.coinbase.com">Polygon x402 + Pyth Oracle</a> ·
+		<a href="https://doc.clickup.com/90131459969/d/h/2ky41vw1-39973/9b0e0ce2cb34211">Polygon x402 + Pyth Oracle</a> ·
 	</p>
 </div>
 
