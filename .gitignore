@@ -1,0 +1,24 @@
+my-env/
+
+# Ignore Python bytecode files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+# Ignore virtual environment directories
+pythonDev/
+.env
+venv/
+
+*.sh
+
+PRIVATE.md
+
+*.json
+requirements.txt
+
+node_modules/node_modules/
+CCTP/node_modules/
+node_modules
+x402
+media
